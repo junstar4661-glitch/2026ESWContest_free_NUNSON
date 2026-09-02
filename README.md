@@ -101,8 +101,8 @@ sudo usermod -aG docker $USER
 
 ```bash
 # 1) 레포 클론
-git clone https://github.com/seoyeon0777/2026ESWContest_free_눈손.git
-cd 2026ESWContest_free_눈손
+git clone https://github.com/junstar4661-glitch/2026ESWContest_free_NUNSON.git
+cd 2026ESWContest_free_NUNSON
 
 # 2) 이미지 빌드 (첫 빌드는 베이스 이미지 다운로드로 10~20분)
 docker compose build
@@ -175,7 +175,7 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 | **robot_arm_description** | 로봇팔 URDF(**5축** + 랙피니언 그리퍼 + 손목 카메라), `display.launch.py`(RViz 시각화) |
 | **robot_arm_moveit_config** | MoveIt 경로계획 설정(SRDF/IK/컨트롤러), `demo.launch.py` |
 | **robot_arm_perception** | RealSense + YOLO markerless 인식(`perception_node`), SRT 스트리밍, RViz 캘리브 도구 |
-| **robot_arm_msgs** | 노드 간 공유 커스텀 메시지 5개 |
+| **robot_arm_msgs** | 노드 간 공유 커스텀 메시지 7개 |
 | **robot_arm_gui** | 브라우저 관제 GUI(읽기 전용). 서보 진단·FSM/계약 상태·YOLO 인식·텔레옵 현황 — §4-4 |
 | **pick_test_pkg** | 그리퍼 단독 테스트 노드(`pick_test_node`) |
 
