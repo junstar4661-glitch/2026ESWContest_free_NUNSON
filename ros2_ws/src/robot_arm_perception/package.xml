@@ -4,7 +4,7 @@
   <name>robot_arm_perception</name>
   <version>0.0.1</version>
   <description>RealSense + YOLO perception node — DetectedObjectArray publisher</description>
-  <maintainer email="ddkk0714@naver.com">jo</maintainer>
+  <maintainer email="junstar4661@naver.com">이용준</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>

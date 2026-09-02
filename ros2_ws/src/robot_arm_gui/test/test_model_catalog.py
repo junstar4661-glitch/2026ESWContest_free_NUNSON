@@ -13,8 +13,8 @@ PRESETS = {
         'pick_classes': 'box-segmentation',
         'task': 'segment',
     },
-    'traffic_light': {
-        'model_path': 'src/robot_arm_perception/models/traffic_light_best.pt',
+    'detect_demo': {
+        'model_path': 'src/robot_arm_perception/models/detect_demo_best.pt',
         'classes': 'green light,red light',
         'pick_classes': '',
         'task': 'detect',
@@ -45,7 +45,7 @@ def test_preset_relative_path_becomes_absolute(tmp_path):
 def test_missing_preset_file_is_listed_but_marked():
     """파일이 없는 프리셋도 목록에는 남긴다 — 화면이 '없음'을 보여줘야 한다."""
     catalog = build_catalog(PRESETS, '/nonexistent', '/ws')
-    tl = find(catalog, 'traffic_light')
+    tl = find(catalog, 'detect_demo')
     assert tl is not None
     assert tl['exists'] is False
     assert tl['size'] is None

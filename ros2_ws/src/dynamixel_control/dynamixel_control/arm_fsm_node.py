@@ -1,6 +1,6 @@
-"""로봇팔 미션 FSM 노드 (Phase 3, 구간2 구호물자 운반 중심).
+"""로봇팔 작업 FSM 노드 (물체 파지·전달 중심).
 
-설계 문서: `project_docs/PHASE3_FSM_설계.md` §4 상태표 / §5 핸드셰이크.
+설계 문서: `내부 개발 기록` §4 상태표 / §5 핸드셰이크.
 구현 방식(결정 '가', 2026-06-29): **MoveIt 단일 경로**.
   - 팔 모션: MoveIt `move_action`(MoveGroup)에 목표 pose 전송 → IK·경로계획은
     MoveIt이 수행 → MoveIt이 `arm_controller` FollowJointTrajectory로 실행 →
@@ -15,7 +15,7 @@
     2) 털털이 ID/방향/속도와 contact effort 임계값을 실기에서 확인해야 함.
     3) 카메라 frame → planning frame(base_link) **TF**가 있어야 MoveIt이 목표를 변환.
 
-2026-07-13 파워트레인 "계약 v2"(Notion `2026 국방로봇 자율주행 SW 전체 개발계획` §5.1/5.2)
+2026-07-13 상위 제어부 "계약 v2"(내부 문서 `상위 시스템 인터페이스 규격` §5.1/5.2)
 반영 — status/mode 문자열과 트리거 조건을 아래처럼 갱신:
   - 작업 개시/하역 모두 **`/chassis_mode == MISSION_STOP` AND 같은 mission_id의
     `/arrival_status`** 를 순서 무관하게 둘 다 받아야 전이(`_try_advance`). 미인식
@@ -41,14 +41,14 @@
     자체 계산하므로 문제 없음.
 
 2026-07-15 — origin/main 재합류 + 실제 STOWING 모션 구현:
-  - PR #17("파워트레인 DDS 통신 복구 + arm_status 10Hz heartbeat")이 이 파일을 이
+  - PR #17("상위 제어부 DDS 통신 복구 + arm_status 10Hz heartbeat")이 이 파일을 이
     브랜치와 무관하게 독립적으로 다시 손대(계약 v2 상태/게이트 로직 없는 이전 버전 위에
     `contract.py`/`qos_profiles.py` 단일 출처 + heartbeat 전용 타이머·MultiThreadedExecutor
     를 추가) `main`에 먼저 병합됨. 이 세션에서 그 인프라(heartbeat 아키텍처·QoS·contract
     상수 단일 출처) 위에 위 계약 v2 FSM 로직(conjunction 게이트·GRIP_LOST 래치·
     STOW_ABORTABLE_STATES·`_is_settled()`)을 재적용.
   - **LOCK_MODES를 `contract.py` 것으로 통일**(기존엔 이 파일이 로컬로 `DRIVING`을 제외한
-    부분집합을 따로 들고 있었음) — `contract.py`(파워트레인 contract.py와 짝, 단일 출처)는
+    부분집합을 따로 들고 있었음) — `contract.py`(상위 제어부 contract.py와 짝, 단일 출처)는
     `DRIVING`도 LOCK_MODES에 포함한다. 즉 PERCEIVE~LIFT 중 `DRIVING` 수신 시에도 이제
     `_enter_locked()`가 걸린다("MISSION_STOP만 허가, 나머지 전부 잠금"을 문자 그대로 적용).
     LOCKED 상태에서 `DRIVING`으로 자동 언락되는 옛 버그(PR #17이 미수정으로 지적)는
@@ -61,15 +61,15 @@
     게이트를 거쳐 `STOWED_LOCKED`.
     `stow_joint_positions` 기본값은 2026-07-29 팀 결정으로 **all-zero**다(주행 안정성 —
     도달 가능한 자세 중 CG가 가장 낮음). 아래 파라미터 선언부의 근거 주석 참고.
-    ⚠️ **파워트레인 문서 §6의 all-zero home 금지와 정면 충돌한다 — 양 팀 합의 전까지
+    ⚠️ **상위 제어부 문서 §6의 all-zero home 금지와 정면 충돌한다 — 양 팀 합의 전까지
     실차 연동 금지.** 또한 URDF 상으로만 검증됐고 실기 검증은 아직이다.
 
-2026-07-15 — 파워트레인 §5.1 잔여 합의 2건 해결(`project_docs/파워트레인_계약_충돌점검.md`
+2026-07-15 — 상위 제어부 §5.1 잔여 합의 2건 해결(`내부 인터페이스 규격 문서`
 항목 1·2 대응):
   - **`_near_stow_posture()` 추가** — `LOCKED`(지형/주행 이벤트로 작업 중단) 경유로 도달한
     임의 자세를 예전엔 정지만 확인되면 바로 `STOWED_LOCKED`로 근사했음. 이제 관절각이
     `stow_joint_positions` 근처(`stow_pos_tol_rad`)인지 확인한 경우에만 `STOWED_LOCKED`를
-    발행하고, 아니면 `EXECUTING`을 유지해 파워트레인 쪽 motion hold를 받는다(거짓 주행
+    발행하고, 아니면 `EXECUTING`을 유지해 상위 제어부 쪽 motion hold를 받는다(거짓 주행
     허가 방지).
   - **`LOWER_RELEASE` 상태 신설** — `PAYLOAD_ALOFT_STATES`(`LIFT`/`CARRY`, 화물을 든 채
     공중일 수 있는 상태)에서 `STOW_REQUEST`로 중단되면, 예전엔 바로 `RELEASE`(그리퍼
@@ -237,7 +237,7 @@ TOOL_PITCH_DOWN = math.pi / 2           # 접근축이 수직 아래(base -Z)를
 
 
 # ──────────────────────────────────────────────
-# status / mode 문자열 — 단일 출처는 contract.py (파워트레인 contract.py 와 짝).
+# status / mode 문자열 — 단일 출처는 contract.py (상위 제어부 contract.py 와 짝).
 # 여기서 상수를 새로 정의하지 말 것. 어휘 변경은 양 팀 합의 사항이다.
 # ──────────────────────────────────────────────
 from dynamixel_control.contract import (       # noqa: E402
@@ -294,7 +294,7 @@ class State(Enum):
     END_EFFECTOR_ROTATE = auto()
     DONE = auto()
     FAILED = auto()
-    # 기존 파워트레인 계약에서 유지하는 감독/안전 상태.
+    # 기존 상위 제어부 계약에서 유지하는 감독/안전 상태.
     GRIP_LOST = auto()
     LOWER_RELEASE = auto()
     STOWING = auto()
@@ -320,7 +320,7 @@ STOW_ABORTABLE_STATES = PREEMPTIBLE_STATES + (
 )
 
 # STOW_REQUEST로 중단될 때 화물을 든 채 공중에 있을 수 있는 상태 — 그리퍼를 바로 열면
-# 낙하 위험(파워트레인 §5.1 잔여 합의 ①). 이 상태들에서만 RELEASE 전에 파지 높이까지
+# 낙하 위험(상위 제어부 §5.1 잔여 합의 ①). 이 상태들에서만 RELEASE 전에 파지 높이까지
 # 먼저 내리는 LOWER_RELEASE를 경유한다. 그 외(PERCEIVE/PLAN/DESCEND/청소 상태)는 이미
 # grasp 높이 근처라 낙하 낙차가 없어 바로 RELEASE해도 안전.
 PAYLOAD_ALOFT_STATES = (State.RETRACT, State.CARRY)
@@ -456,12 +456,12 @@ class ArmFsmNode(Node):
         # 발자국은 훨씬 작고 중력토크도 0.79N·m 로 20배 낮지만, 높이 978mm·CG 400mm 라
         # 전복 여유가 나쁘다. 차체가 짧아 y 606mm 가 안 들어가면 그쪽으로 되돌릴 것.)
         #
-        # ⚠️ **파워트레인 계약 위반 상태다 — 양 팀 합의 전까지 실차 연동 금지.**
-        # 파워트레인 문서 §6 "all-zero home 과 direct dynamixel goal publisher 는 production
-        # 에서 금지한다" (project_docs/파워트레인_계약_충돌점검.md:110).
+        # ⚠️ **상위 제어부 계약 위반 상태다 — 양 팀 합의 전까지 실차 연동 금지.**
+        # 상위 제어부 문서 §6 "all-zero home 과 direct dynamixel goal publisher 는 production
+        # 에서 금지한다" (내부 인터페이스 규격 문서).
         # 실질 위험: `_near_stow_posture()` 가 무력화된다 — 전원만 들어오고 초기화 안 된 팔도
         # 관절각이 ~0 이라 이 검사를 그냥 통과해서, 실제로 접히지 않았는데 STOWED_LOCKED 를
-        # 발행 → 파워트레인이 주행 허가로 받는다. 금지 조항의 이유가 정확히 이것이다.
+        # 발행 → 상위 제어부이 주행 허가로 받는다. 금지 조항의 이유가 정확히 이것이다.
         # 회피책: 물리적으로 거의 같으면서 0 과 구분되는 값(예: [0.0, 0.15, 0.15] — bbox
         # 224×606mm 로 all-zero 와 동일, 높이 328mm, 토크 12.61N·m)을 쓰면 stow_pos_tol_rad
         # (0.1) 밖이라 위 검사가 되살아난다. 주행 안정성은 사실상 그대로다.
@@ -617,7 +617,7 @@ class ArmFsmNode(Node):
 
         # ── 토픽/액션 I/O ─────────────────────────
         # QoS 는 계약(contract.py/qos_profiles.py) 기준. heartbeat 계열을 depth 10 으로
-        # 두면 낡은 샘플이 큐에 쌓여 파워트레인의 age(신선도) 판정이 어긋난다.
+        # 두면 낡은 샘플이 큐에 쌓여 상위 제어부의 age(신선도) 판정이 어긋난다.
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.create_subscription(DetectedObject, '/pick_target', self._on_pick_target, latched)
         self.create_subscription(ArrivalStatus, '/arrival_status', self._on_arrival, ARRIVAL_QOS)
@@ -628,7 +628,7 @@ class ArmFsmNode(Node):
             TaskCommand, g('vla_command_topic').value, self._on_task_command, 10)
         # 계약 §5.1 "locked heartbeat는 ... controller fault 0 ... 을 실제 확인한다" —
         # moveit_dynamixel_bridge가 Hardware Error Status를 집계해 발행(내부용 토픽,
-        # 파워트레인 DDS 경계를 넘지 않음). _is_settled()에서 게이트로 사용.
+        # 상위 제어부 DDS 경계를 넘지 않음). _is_settled()에서 게이트로 사용.
         self.create_subscription(Bool, '/dynamixel/controller_fault',
                                   self._on_controller_fault, 10)
         # 브릿지가 그리퍼 Overload 를 REBOOT 로 복구하는 동안 True. 그 구간엔 토크가
@@ -728,11 +728,11 @@ class ArmFsmNode(Node):
         self._last_grip_refresh = None
 
         # ── heartbeat ─────────────────────────────
-        # 계약: 현재 상태를 10Hz 로 끊임없이 발행한다. 0.5초 넘게 끊기면 파워트레인이
+        # 계약: 현재 상태를 10Hz 로 끊임없이 발행한다. 0.5초 넘게 끊기면 상위 제어부이
         # arm_status_stale 로 차를 세운다.
         #
         # 발행 경로는 **반드시 이 타이머 하나뿐**이어야 한다. 상태 핸들러가 각자
-        # publish 하면 stamp 가 뒤섞여 나갈 수 있는데, 파워트레인은 stamp 가 0.5초 이상
+        # publish 하면 stamp 가 뒤섞여 나갈 수 있는데, 상위 제어부은 stamp 가 0.5초 이상
         # 역행하면 **영구 latch**(프로세스 재시작 전까지 해제 불가)를 건다.
         # 그래서 핸들러는 _set_status() 로 값만 바꾸고, 실제 발행은 여기서만 한다.
         #
@@ -1556,10 +1556,10 @@ class ArmFsmNode(Node):
 
         그 외(PERCEIVE/PLAN/DESCEND/청소 중단, 빈손)는 예전엔 정지만 확인되면
         바로 `STOWED_LOCKED`로 근사했으나, LOCKED는 새 goal을 안 보내(모션 없이 그 자리에서
-        홀드) 실제로는 임의의 안 접힌 자세일 수 있다 — 파워트레인은 `STOWED_LOCKED`를
+        홀드) 실제로는 임의의 안 접힌 자세일 수 있다 — 상위 제어부은 `STOWED_LOCKED`를
         "차가 출발해도 되는" 근거로 그대로 신뢰하므로 이는 안전 gap이었다(§5.1 잔여 합의 ②).
         `_near_stow_posture()`로 관절각이 실제 `stow_joint_positions` 근처인지 확인한
-        경우에만 `STOWED_LOCKED`를 발행하고, 아니면 정직하게 `EXECUTING`을 유지해 파워트레인
+        경우에만 `STOWED_LOCKED`를 발행하고, 아니면 정직하게 `EXECUTING`을 유지해 상위 제어부
         쪽 motion hold를 받는다(거짓 주행 허가보다 안전).
         """
         if not self._is_settled():
@@ -2413,7 +2413,7 @@ class ArmFsmNode(Node):
         """발행할 현재 상태를 갱신한다. 실제 발행은 _publish_heartbeat 가 전담한다.
 
         여기서 직접 publish 하지 말 것 — 발행 경로가 둘이 되면 stamp 순서가 뒤집힐 수
-        있고, 파워트레인은 stamp 역행을 영구 latch 로 처벌한다(contract.py 참고).
+        있고, 상위 제어부은 stamp 역행을 영구 latch 로 처벌한다(contract.py 참고).
         """
         self._status = status
 

@@ -17,7 +17,7 @@ camera_mode 파라미터:
   test       test_image_path 정지 이미지 반복 (하드웨어 없이 검증) — translation 0,
              orientation(2D PCA)만 채워짐
 
-2026-07-13 파워트레인 "계약 v2"(Notion `2026 국방로봇 자율주행 SW 전체 개발계획` §3.2/§15) 반영:
+2026-07-13 상위 제어부 "계약 v2"(내부 문서 `상위 시스템 인터페이스 규격` §3.2/§15) 반영:
 D435i는 로봇팔 전용 camera owner — 원격 조종용 raw 영상은 YOLO 추론·구독자 유무를
 기다리면 안 됨("raw sender는 YOLO/debug image를 기다리지 않는다"). `/perception/raw_image`를
 YOLO 추론과 무관하게 발행한다(`stream_node`가 SRT :5002로 송출). 기존 `/perception/debug_image`
@@ -35,7 +35,7 @@ YOLO 추론과 무관하게 발행한다(`stream_node`가 SRT :5002로 송출). 
 이 노드 하나로 통합돼 있어, 구간이 바뀔 때마다 재시작하며 `model_name` 파라미터로
 `model_presets.MODEL_PRESETS`의 model_path/classes/pick_classes 세트를 한 번에 갈아
 끼운다(그리퍼 preset과 동일 패턴). seg 모델(box)은 markerless pose 전체가, detect 전용
-모델(traffic_light)은 bbox 중심 depth translation만 활성화되는 기존 `_get_binmask` 폴백
+detect 전용 모델은 bbox 중심 depth translation만 활성화되는 기존 `_get_binmask` 폴백
 구조가 그대로 이 다중 모델 전환을 뒷받침한다.
 
 2026-08-11: 그 "재시작"을 없앴다 — `model_name`/`model_path`/`task`/`backend` 를
@@ -239,7 +239,7 @@ class PerceptionNode(Node):
 
         # model_name 이 model_presets.MODEL_PRESETS 의 기본값을 고르고,
         # 이후 개별 파라미터는 여전히 CLI/launch로 override 가능(gripper_type과 동일 패턴).
-        self.declare_parameter('model_name', DEFAULT_MODEL)  # 'box' | 'traffic_light' | ...
+        self.declare_parameter('model_name', DEFAULT_MODEL)  # 'box'
         self._model_name = self.get_parameter('model_name').value
         preset = get_preset(self._model_name, self.get_logger())
 

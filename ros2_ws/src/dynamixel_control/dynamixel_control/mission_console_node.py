@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""벤치 운영자 콘솔 — 파워트레인 없이 사람이 직접 팔에 미션을 지시한다.
+"""벤치 운영자 콘솔 — 상위 제어부 없이 사람이 직접 팔에 미션을 지시한다.
 
 ## 왜 필요한가
 
 `arm_fsm` 은 계약상 **`/chassis_mode`(MISSION_STOP) + `/arrival_status` 두 개가 모두
-성립할 때만** 움직인다(`_try_advance()` 의 conjunction). 실전에서는 파워트레인이 그
-둘을 발행하지만, 벤치에는 파워트레인이 없다 — 그래서 팔만 놓고 "비전 → 픽"을
+성립할 때만** 움직인다(`_try_advance()` 의 conjunction). 실전에서는 상위 제어부이 그
+둘을 발행하지만, 벤치에는 상위 제어부이 없다 — 그래서 팔만 놓고 "비전 → 픽"을
 시켜보려면 그 대역을 대신 서줄 무언가가 필요하다. 이 노드가 그것이다.
 
 ## ⚠️ 벤치 전용 — production 금지
 
-이 노드는 **계약이 파워트레인을 owner 로 지정한 토픽**(`/chassis_mode`,
+이 노드는 **계약이 상위 제어부을 owner 로 지정한 토픽**(`/chassis_mode`,
 `/arrival_status`)을 발행한다. 실전 launch 에 절대 넣지 말 것. owner 가 둘이 되면
-파워트레인의 상태와 이 콘솔의 상태가 어긋나며, 파워트레인은 `header.stamp` 가
+상위 제어부의 상태와 이 콘솔의 상태가 어긋나며, 상위 제어부은 `header.stamp` 가
 0.5초 이상 역행하면 **프로세스 재시작 전까지 안 풀리는 영구 latch** 를 건다.
 
 그래서 기동 시 `/chassis_mode` 에 **다른 발행자가 이미 있으면 거부**한다. 이건
@@ -75,7 +75,7 @@ from .qos_profiles import ARRIVAL_QOS, HEARTBEAT_QOS
 #: 한 샘플 유실이 곧바로 락으로 이어지지 않는다.
 HEARTBEAT_HZ = 10.0
 
-#: 기동 시 다른 발행자(=진짜 파워트레인) 탐지에 줄 시간. DDS discovery 는 즉시가 아니다.
+#: 기동 시 다른 발행자(=진짜 상위 제어부) 탐지에 줄 시간. DDS discovery 는 즉시가 아니다.
 DISCOVERY_WAIT_S = 2.0
 
 PROMPT = (
@@ -267,16 +267,16 @@ def _apply_tf(tf, xyz):
 
 
 def _guard_single_owner(node):
-    """진짜 파워트레인이 이미 /chassis_mode 를 밀고 있으면 뜨지 않는다."""
+    """진짜 상위 제어부이 이미 /chassis_mode 를 밀고 있으면 뜨지 않는다."""
     end = node.get_clock().now().nanoseconds * 1e-9 + DISCOVERY_WAIT_S
     while node.get_clock().now().nanoseconds * 1e-9 < end:
         rclpy.spin_once(node, timeout_sec=0.1)
     others = node.count_publishers('/chassis_mode') - 1   # 자기 자신 제외
     if others > 0:
         node.get_logger().error(
-            f'/chassis_mode 에 다른 발행자가 {others}개 있습니다 — 파워트레인이 '
+            f'/chassis_mode 에 다른 발행자가 {others}개 있습니다 — 상위 제어부이 '
             '이미 떠 있는 구성으로 보입니다. 이 콘솔은 벤치 전용이며 owner 가 '
-            '둘이 되면 파워트레인이 영구 latch 를 겁니다. 종료합니다.')
+            '둘이 되면 상위 제어부이 영구 latch 를 겁니다. 종료합니다.')
         return False
     return True
 

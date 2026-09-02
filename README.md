@@ -1,20 +1,77 @@
-# 2025 극한로봇 경진대회 — 개발 환경
+# 도와드림 (DOWADREAM) — 책상 위 AI 로봇팔 비서
 
-ROS 2 Humble 기반 재난대응 로봇 프로젝트입니다. YOLO 비전으로 목표를 인식하고, Dynamixel 로봇팔과 자율주행 파워트레인이 협동해 임무를 수행합니다.
-개발 환경은 Docker로 통일되어 있어, 레포를 clone하고 `docker compose up`만 하면 누구나 동일한 환경에서 작업할 수 있습니다.
+**제24회 임베디드SW경진대회 · 자유공모 부문 출품작 · 팀 눈손**
+
+시각장애인과 거동이 어려운 어르신을 위한 책상 거치형 로봇팔 비서입니다.
+음성·GUI 요청을 받아 물건을 찾아 집어 건네주고, 책상 상태를 상시 감시해
+낙하·흘림 같은 위험을 먼저 알립니다. 표식(마커) 부착 없이 카메라만으로
+대상의 위치와 자세를 추정하는 것이 인식 쪽의 핵심입니다.
+
+개발 환경은 Docker로 통일되어 있어, 레포를 clone하고 `docker compose up`만 하면
+동일한 환경에서 작업할 수 있습니다.
 
 ## 시스템 한눈에
 
 ```
-[카메라/LiDAR] ──▶ Jetson (ROS 2 Humble)
-                     │  YOLO 인식 · Depth 3D 좌표 · SLAM
-                     ▼
-              Mission Manager (FSM)
-              ├──▶ 로봇팔   : MoveIt 경로계획 → Dynamixel 서보
-              └──▶ 파워트레인: 자율주행(Nav2) / CAN 모터
+[RealSense D435i + 손목 USB 캠] ──▶ Jetson Orin (ROS 2 Humble)
+                                      │  YOLOv8-seg 인식 · depth 3D 좌표 · 마스크 PCA 자세
+                                      ▼
+                             작업 FSM (arm_fsm_node)
+                             │  PLAN → LOCATE → APPROACH → DESCEND
+                             │  → GRASP → VERIFY → TRANSFER → RELEASE
+                             ▼
+                       Dynamixel 5축 + 그리퍼 (자체 DLS IK)
 ```
 
 > 모든 ROS 2 명령은 **Docker 컨테이너 안**에서 실행합니다. 호스트는 `git`과 `docker compose`에만 씁니다.
+
+---
+
+## 0. 기반 플랫폼 출처 및 이번 대회 개발 범위
+
+본 출품작은 **기존 소프트웨어를 개선한 작품**입니다. 대회 규정 제10조 ③에 따라
+기존 소프트웨어의 출처와 이번 대회에서의 개선점·추가 사항을 아래와 같이 밝힙니다.
+상세 내역은 개발완료보고서를 참고하십시오.
+
+### 기존 플랫폼 (본 대회 이전에 개발되어 있던 부분)
+
+로봇팔을 구동하기 위한 범용 계층으로, 본 대회 주제와 무관하게 선행 개발된 자산입니다.
+
+| 패키지 | 내용 |
+| --- | --- |
+| `robot_arm_msgs` | 노드 간 메시지 인터페이스 정의 |
+| `robot_arm_description` | URDF · 좌표계 · 메시 · 카메라 TF |
+| `robot_arm_moveit_config` | MoveIt 초기 설정 (SRDF · 기구학 · 컨트롤러) |
+| `robot_manual_gui` | 수동 조작 · 실기 시험용 GUI |
+| `dynamixel_control` 중 서보 통신·구동 계층 | Dynamixel 버스 입출력, 관절 상태 발행 |
+
+### 이번 대회에서 개선한 부분
+
+| 항목 | 개선 내용 |
+| --- | --- |
+| 역기구학 | MoveIt MoveGroup 경로 → **자체 DLS(감쇠최소자승) IK**로 전환. FK 서비스 + 유한차분 야코비안 기반 |
+| 파지 판정 | 서보 전류(effort) 기반 파지·낙하 판정 도입 (`gripper_presets.py`) |
+| 안전 정지 | 정지 사유 8종을 코드 레벨로 정의 (`contract.py`) |
+| 인식 | YOLOv8-seg 학습, TensorRT FP16 변환, Selective Projection 최적화, 마스크 2D PCA 기반 yaw 추정 |
+| 손목 카메라 | 근접 거리·파지 상태 판정 지표 신규 도입 (`wrist_metrics.py`) |
+| 관제 | 브라우저 기반 읽기 전용 관제 GUI (`robot_arm_gui`) |
+
+### 이번 대회에서 새로 추가한 부분
+
+본 주제(책상 위 비서)를 위해 신규 설계·구현된 영역입니다.
+
+- 9개 기능 정의 및 사용자 시나리오 설계 (물건 전달 · 원위치 복원 · 방향 정렬 · 고정 보조 · 판독 · 낙하 방지 · 복약 알림 · 흘림 감지 · 파지력 조절)
+- 대상 물체 데이터셋 구축 (촬영 · 라벨링 · 증강)
+- `pick_test_pkg` — 파지 시퀀스 실기 검증
+- `robot_vla` — 언어 지시 기반 동작 생성 (설계 단계)
+- 음성 입출력 · 책상 상태 감시 · 안전 판정 모듈 (설계 단계)
+
+### 사용한 외부 자산
+
+- `ros2_ws/src/robot_arm_description/vendor/ee_description/` — 외부에서 제공받은
+  엔드이펙터 CAD의 URDF 변환 결과(fusion2urdf 생성물) 스냅샷입니다. 원본을 그대로
+  보존하며, 통합 시 링크명만 재지정했습니다. 자세한 내용은 해당 디렉터리의 README를 참고하십시오.
+- 그 외 ROS 2 · MoveIt · Ultralytics YOLO 등 오픈소스 패키지는 각 라이선스를 따릅니다.
 
 ---
 
@@ -44,8 +101,8 @@ sudo usermod -aG docker $USER
 
 ```bash
 # 1) 레포 클론
-git clone https://github.com/ksp118/extreme-robot.git
-cd extreme-robot
+git clone https://github.com/seoyeon0777/2026ESWContest_free_눈손.git
+cd 2026ESWContest_free_눈손
 
 # 2) 이미지 빌드 (첫 빌드는 베이스 이미지 다운로드로 10~20분)
 docker compose build
@@ -118,7 +175,7 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 | **robot_arm_description** | 로봇팔 URDF(**5축** + 랙피니언 그리퍼 + 손목 카메라), `display.launch.py`(RViz 시각화) |
 | **robot_arm_moveit_config** | MoveIt 경로계획 설정(SRDF/IK/컨트롤러), `demo.launch.py` |
 | **robot_arm_perception** | RealSense + YOLO markerless 인식(`perception_node`), SRT 스트리밍, RViz 캘리브 도구 |
-| **robot_arm_msgs** | 파워트레인 팀과 공유하는 커스텀 메시지 5개 |
+| **robot_arm_msgs** | 노드 간 공유 커스텀 메시지 5개 |
 | **robot_arm_gui** | 브라우저 관제 GUI(읽기 전용). 서보 진단·FSM/계약 상태·YOLO 인식·텔레옵 현황 — §4-4 |
 | **pick_test_pkg** | 그리퍼 단독 테스트 노드(`pick_test_node`) |
 
@@ -165,7 +222,7 @@ RViz **MotionPlanning** 패널에서 목표 자세를 정하고 **Plan & Execute
 
 ### 4-3. 조이스틱 벤치 텔레옵 (5축)
 
-게임패드로 로봇팔 5축을 직접 조작합니다. **파워트레인 없이 팔만 돌리는 벤치 경로**입니다.
+게임패드로 로봇팔 5축을 직접 조작합니다. **팔만 돌리는 벤치 전용 경로**입니다.
 
 ```bash
 # 하드웨어 없이 RViz 로 확인
@@ -175,7 +232,7 @@ ros2 launch dynamixel_control bench.launch.py rviz:=true
 ros2 launch dynamixel_control bench.launch.py use_hardware:=true rviz:=true
 ```
 
-> ⚠️ **이 경로는 파워트레인 계약상 production 금지입니다.** `teleop_core → /dynamixel/goal_position → position_node`는 계약이 금지하는 *"direct dynamixel goal publisher"*입니다. 벤치/개발 전용이며 대회 launch 에 넣지 않습니다.
+> ⚠️ **이 경로는 production 금지입니다.** `teleop_core → /dynamixel/goal_position → position_node`는 FSM을 우회하는 직접 발행 경로입니다. 벤치/개발 전용이며 대회 launch 에 넣지 않습니다.
 
 #### XL430 마스터–슬레이브 TCP 벤치 (1축)
 
@@ -232,7 +289,7 @@ L1(`buttons[4]`)을 `0`으로 바꾸면 팔이 즉시 멈춥니다.
 
 ### 4-4. 관제 GUI (브라우저, 읽기 전용)
 
-서보 전류·온도, 관절 상태, FSM/파워트레인 계약 상태, YOLO 인식 결과와 영상, 원격조종 현황을
+서보 전류·온도, 관절 상태, FSM 상태, YOLO 인식 결과와 영상, 원격조종 현황을
 **브라우저 한 페이지**에서 봅니다. 새로 설치할 것은 없습니다(파이썬 표준 라이브러리만 씁니다).
 
 ```bash
@@ -260,7 +317,7 @@ ssh -L 8088:localhost:8088 <jetson-주소>
 
 | 화면 | 내용 |
 | --- | --- |
-| 상태 스트립 | `/arm_status` + 신선도(0.5초 넘으면 파워트레인이 차를 세웁니다), 섀시 모드와 **작업 허가/잠금**, 차 주행 가능 여부, 어느 드라이버가 떠 있는지 |
+| 상태 스트립 | `/arm_status` + 신선도(0.5초 초과 시 정지 판정), 작업 허가/잠금 상태, 어느 드라이버가 떠 있는지 |
 | 서보 | 모터별 위치·목표오차·속도 + **전류/트립 여유**, **급변 트립 여유**, 온도 미터 + 60초 스파크라인 |
 | 비전 | 영상(MJPEG) + 검출 목록(클래스·확신도·3D 위치·깊이 유무) + `/pick_target` 강조 |
 | 원격조종 | 어느 프론트엔드가 붙었는지, jog 활성, `/joy` 신선도, 데드맨 눌림 |
@@ -416,7 +473,7 @@ xhost +local:docker
 echo $DISPLAY            # 보통 :0 또는 :1
 ```
 
-**파워트레인과 토픽은 보이는데 데이터가 안 옴** — `ipc: host` 누락입니다.
+**토픽은 보이는데 데이터가 안 옴** — `ipc: host` 누락입니다.
 
 `ros2 topic list`에는 토픽이 멀쩡히 뜨고 publisher 수도 맞는데 `ros2 topic echo`가 아무것도 출력하지 않는 증상입니다. Fast-DDS는 상대가 같은 호스트면 공유메모리(`/dev/shm`)로 데이터를 보내는데, Docker는 컨테이너마다 별도 `/dev/shm`을 줍니다. discovery는 UDP로 하니 성공하고, 데이터만 조용히 사라집니다.
 
@@ -424,7 +481,7 @@ echo $DISPLAY            # 보통 :0 또는 :1
 docker inspect ros2_humble --format '{{.HostConfig.IpcMode}}'   # host 여야 함
 ```
 
-**양쪽 컨테이너 모두** `ipc: host`여야 합니다 — 우리 `docker-compose.yml`과 파워트레인의 `docker-compose.jetson.yml`(`powertrain_ros` 서비스) 둘 다입니다.
+**통신하는 컨테이너 모두** `ipc: host`여야 합니다.
 
 **ros2 명령이 안 됨** — 소싱이 안 된 경우 수동으로:
 ```bash

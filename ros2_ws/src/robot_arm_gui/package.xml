@@ -4,7 +4,7 @@
   <name>robot_arm_gui</name>
   <version>0.1.0</version>
   <description>브라우저 관제 GUI — 서보 진단·FSM/계약 상태·YOLO 인식·텔레옵 현황. 기본은 읽기 전용이고, control:=true 일 때만 모델 교체·텔레옵·캘리브 제어가 열린다</description>
-  <maintainer email="koreanmcpe@gmail.com">ksp118</maintainer>
+  <maintainer email="junstar4661@naver.com">이용준</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>

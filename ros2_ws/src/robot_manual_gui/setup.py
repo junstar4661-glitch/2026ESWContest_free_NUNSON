@@ -16,8 +16,8 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
+    maintainer='이용준',
+    maintainer_email='junstar4661@naver.com',
     description='Manual ROS 2 hardware validation GUI',
     license='Apache-2.0',
     entry_points={'console_scripts': [

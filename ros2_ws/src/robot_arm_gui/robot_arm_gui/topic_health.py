@@ -13,7 +13,7 @@ launch 파일이 하나만 뜨도록 배타 처리하지만, 수동 기동으로
 
 #: 토픽별 "이 나이를 넘으면 낡았다" 기준 [s].
 #: `/arm_status` 0.5 는 계약값(`contract.HEARTBEAT_TIMEOUT_S`)이라 임의로 바꾸면 안 된다 —
-#: 파워트레인이 같은 기준으로 차를 세운다.
+#: 상위 제어부이 같은 기준으로 차를 세운다.
 STALE_AFTER = {
     '/arm_status': 0.5,
     '/chassis_mode': 1.0,

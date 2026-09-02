@@ -26,7 +26,7 @@ teleop_core 로 보낸다. 시리얼/모터 로직은 전혀 없다 — 순수 �
    관절에 물리면 아무도 안 만졌는데 풀속으로 돈다 — 쓰려면 오프셋 보정이 필요하다.
 
 ⚠️ 벤치 전용 — 이 경로(teleop_core → /dynamixel/goal_position → position_node)는
-   파워트레인 계약상 "direct dynamixel goal publisher" 라 production 금지다.
+   상위 제어부 계약상 "direct dynamixel goal publisher" 라 production 금지다.
 """
 
 import rclpy
@@ -233,7 +233,7 @@ class JoystickTeleop(Node):
         if self._btn_pressed(self.home_button) and not self._estop:
             self._cmd('home')
         if self._btn_pressed(self.mode_button):
-            # TODO: DRIVE/ARM 전환. 파워트레인 계약상 전환은 wheel-stop·MISSION_STOP·
+            # TODO: DRIVE/ARM 전환. 상위 제어부 계약상 전환은 wheel-stop·MISSION_STOP·
             #       stow-before-drive 등 선결 조건이 있다. 지금은 스텁.
             self.get_logger().info('PS: DRIVE/ARM 전환 요청 — 미구현(스텁)')
 

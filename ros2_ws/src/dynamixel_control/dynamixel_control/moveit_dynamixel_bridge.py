@@ -56,7 +56,7 @@ LEN_PRESENT_POSITION = 4
 
 # X-시리즈(XL430/XC430/XM 공통) Present Velocity 데이터시트 고정값: signed, 1 LSB = 0.229 rev/min.
 # PRESENT_VELOCITY 는 이미 아래 SyncRead 범위(70~135) 안에 있어 버스 트랜잭션 추가 없이
-# 파싱만 하면 된다 — 그동안 버려지던 바이트를 꺼내 쓰는 것뿐(Notion "그리퍼 tick/
+# 파싱만 하면 된다 — 그동안 버려지던 바이트를 꺼내 쓰는 것뿐(내부 문서 "그리퍼 tick/
 # wrist_to_gripper/PRESENT_VELOCITY 실측·검증 절차" §2-3).
 VELOCITY_LSB_TO_RAD_S = 0.229 * 2.0 * math.pi / 60.0
 
@@ -748,7 +748,7 @@ class MoveItDynamixelBridge(Node):
             String, '/control/mode_status', 10)
 
         # 계약 §5.1 "locked heartbeat는 ... controller fault 0 ... 을 실제 확인한다" 대응.
-        # arm_fsm 이 CARRYING_LOCKED/STOWED_LOCKED 발행 전 게이트로 구독(내부용 — 파워트레인
+        # arm_fsm 이 CARRYING_LOCKED/STOWED_LOCKED 발행 전 게이트로 구독(내부용 — 상위 제어부
         # 쪽 DDS 경계를 넘지 않음, robot_arm_msgs 계약과 무관).
         self.fault_pub = self.create_publisher(
             Bool,

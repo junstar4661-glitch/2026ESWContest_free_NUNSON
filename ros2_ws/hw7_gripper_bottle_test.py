@@ -7,7 +7,7 @@ goal position(각도)을 양쪽에 쓴다. 포지션은 각도로 지정: 닫힘
 (기본값, --close-deg/--open-deg로 변경 가능).
 
 또한 두 모터의 PRESENT_CURRENT(126,2 signed)를 읽어 **max-abs(절댓값이 큰 쪽)** 전류를
-주기적으로 출력한다 — effort threshold 실측·캘리브레이션(Notion 절차)에 그대로 쓰라고
+주기적으로 출력한다 — effort threshold 실측·캘리브레이션(내부 문서 절차)에 그대로 쓰라고
 넣었다. 런타임(moveit_dynamixel_bridge)이 파지/DROP 판정에 쓰는 값과 동일한 집계 방식이다.
 
 /pick_target(DetectedObject)은 transient_local(latched)라 병이 사라져도 마지막 값이 남아있어

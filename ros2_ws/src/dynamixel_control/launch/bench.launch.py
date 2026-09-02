@@ -1,4 +1,4 @@
-"""조이스틱 벤치 텔레옵 — 파워트레인 없이 팔만 구동한다.
+"""조이스틱 벤치 텔레옵 — 상위 제어부 없이 팔만 구동한다.
 
 기동 대상:
   - joy_node        : 게임패드 → /joy
@@ -16,7 +16,7 @@
   - use_hardware:=false → teleop_core 가 목표값을 sim 으로 발행
   - use_hardware:=true  → position_node 가 실서보 엔코더로 발행 (teleop_core sim 은 off)
 
-⚠️ 이 경로(direct dynamixel goal publisher)는 파워트레인 계약상 **production 금지**다.
+⚠️ 이 경로(direct dynamixel goal publisher)는 상위 제어부 계약상 **production 금지**다.
    벤치/개발 전용이며, 대회 launch 에 넣지 않는다.
 
 사용 예)

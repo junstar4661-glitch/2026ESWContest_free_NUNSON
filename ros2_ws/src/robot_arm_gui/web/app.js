@@ -176,7 +176,7 @@ function renderStrip(snap) {
   $('arm-mission').textContent = arm.mission_id === null || arm.mission_id === undefined
     ? '' : `mission ${arm.mission_id}`;
   $('arm-age').innerHTML = armStale
-    ? `<span class="state-critical">■ STALE (${fmtAge(arm.age)}) — 파워트레인이 차를 세웁니다</span>`
+    ? `<span class="state-critical">■ STALE (${fmtAge(arm.age)}) — 상위 제어부이 차를 세웁니다</span>`
     : `${fmtAge(arm.age)}${arm.stamp_age !== null && arm.stamp_age !== undefined
       ? ` · stamp ${arm.stamp_age.toFixed(2)}초` : ''}`;
 

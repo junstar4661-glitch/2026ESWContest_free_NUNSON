@@ -21,7 +21,7 @@
 계약이 owner 를 못 박아 둔 토픽들(`/arm_status`·`/chassis_mode`·`/arrival_status`·
 `/detected_objects`·`/joint_states`)과 계약이 금지하는 `/dynamixel/goal_position` 은
 어느 모드에서도 발행하지 않는다. 특히 `/arm_status` 는 발행 경로가 둘이 되면
-header.stamp 가 역행할 수 있고, 그러면 파워트레인이 **영구 latch** 를 건다
+header.stamp 가 역행할 수 있고, 그러면 상위 제어부이 **영구 latch** 를 건다
 (프로세스 재시작 전까지 해제 불가).
 
 제어 모드가 미는 것은 owner 가 없는 `/arm/teleop_jog`·`/arm/teleop_cmd` 둘과,
@@ -59,7 +59,7 @@ from robot_arm_msgs.msg import ArmStatus, ArrivalStatus, ChassisMode
 from robot_arm_msgs.msg import DetectedObject, DetectedObjectArray
 
 # 계약 어휘의 단일 출처. 여기 없는 값을 GUI 가 새로 만들면 화면과 실제 게이트가
-# 어긋난다 — 파워트레인 contract.py 와 짝인 파일을 그대로 읽는다.
+# 어긋난다 — 상위 제어부 contract.py 와 짝인 파일을 그대로 읽는다.
 from dynamixel_control.contract import (
     DRIVE_READY_STATUSES, HEARTBEAT_TIMEOUT_S, LOCK_MODES, MODE_MISSION_STOP,
 )
@@ -277,7 +277,7 @@ class TelemetryNode(Node):
         n.create_subscription(Bool, '/dynamixel/controller_fault',
                               self._on_controller_fault, 10)
         n.create_subscription(JointState, '/joint_states', self._on_joint_states, 10)
-        # 파워트레인 계약
+        # 상위 제어부 계약
         n.create_subscription(ArmStatus, '/arm_status', self._on_arm_status, HEARTBEAT_QOS)
         n.create_subscription(ChassisMode, '/chassis_mode', self._on_chassis, HEARTBEAT_QOS)
         n.create_subscription(ArrivalStatus, '/arrival_status', self._on_arrival, ARRIVAL_QOS)
@@ -327,7 +327,7 @@ class TelemetryNode(Node):
                                     time.monotonic())
 
     def _on_arm_status(self, msg):
-        # 계약: stamp 는 단조 증가해야 하고 0.5초 이상 낡으면 파워트레인이 차를 세운다.
+        # 계약: stamp 는 단조 증가해야 하고 0.5초 이상 낡으면 상위 제어부이 차를 세운다.
         stamp_age = None
         stamp = Time.from_msg(msg.header.stamp)
         if stamp.nanoseconds > 0:
