@@ -1,7 +1,6 @@
 """로봇팔 ↔ 상위 제어부 ROS2 계약 — 값 어휘·QoS 단일 출처.
 
 ⚠️ **이 파일은 상위 제어부의 `upper_controller_ros/contract.py` 와 짝이다.**
-    github.com/lightminn/upper controller-sw : ros2/src/upper_controller_ros/upper_controller_ros/contract.py
 
 메시지 **타입**은 `robot_arm_msgs`(우리 소유, 상위 제어부이 벤더링해 각자 빌드)가 정의하고,
 **값 어휘**는 양쪽 contract.py 가 정의한다. 한쪽만 바꾸면 통신이 조용히 깨지므로
