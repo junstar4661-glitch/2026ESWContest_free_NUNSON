@@ -176,7 +176,7 @@ function renderStrip(snap) {
   $('arm-mission').textContent = arm.mission_id === null || arm.mission_id === undefined
     ? '' : `mission ${arm.mission_id}`;
   $('arm-age').innerHTML = armStale
-    ? `<span class="state-critical">■ STALE (${fmtAge(arm.age)}) — 상위 제어부이 차를 세웁니다</span>`
+    ? `<span class="state-critical">■ STALE (${fmtAge(arm.age)}) — 안전 정지가 발생합니다</span>`
     : `${fmtAge(arm.age)}${arm.stamp_age !== null && arm.stamp_age !== undefined
       ? ` · stamp ${arm.stamp_age.toFixed(2)}초` : ''}`;
 
@@ -194,8 +194,8 @@ function renderStrip(snap) {
 
   const driveReady = (contract.drive_ready || []).includes(arm.status);
   $('drive-ready').innerHTML = driveReady
-    ? '<span class="state-good">✔ 차 주행 가능 상태</span>'
-    : `<span class="state-warning">▲ 차 주행 불가 — ${(contract.drive_ready || []).join(' / ')} 필요</span>`;
+    ? '<span class="state-good">✔ 작업 허가 상태</span>'
+    : `<span class="state-warning">▲ 작업 잠금 — ${(contract.drive_ready || []).join(' / ')} 필요</span>`;
 
   const fault = snap.controller_fault;
   $('ctrl-fault').innerHTML = fault.value === null || fault.value === undefined
